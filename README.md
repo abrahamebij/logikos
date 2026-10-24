@@ -6,6 +6,10 @@ Abraham Ebijuni · October 24, 2026
 
 Logikos is a free, open-source desktop application for presenting church services. It offers an Easyworship-style experience, with an AI assistant built in that listens to the service and puts the right content on screen automatically.
 
+## UI Design (In Progress)
+
+The user interface is currently being designed in Figma. Follow the ongoing design work in the [Logikos UI design file](https://www.figma.com/design/4XFalm8Ps0TxFdfLYC0Dj7/Logikos?t=bMfYyFaOBWmbfoLA-1).
+
 ## The Problem
 
 Running the screens during a service is a demanding live job. The operator has to follow the pastor, find the right scripture or lyric, and display it at the right moment, all without delay. Existing tools like Easyworship rely entirely on manual control. AI-assisted alternatives such as Loghema AI exist, but they are paid and closed, which puts them out of reach for many smaller churches.
