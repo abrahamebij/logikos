@@ -5,7 +5,7 @@ import { FaPlus } from "react-icons/fa6";
 import { BsPrinter } from "react-icons/bs";
 import { MdOutlineCheckBoxOutlineBlank } from "react-icons/md";
 import { LuSend } from "react-icons/lu";
-import { FiMinimize2 } from "react-icons/fi";
+import { PiCopy } from "react-icons/pi";
 import { Button } from "../ui/button";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect, useState } from "react";
@@ -84,7 +84,7 @@ export default function Header() {
             <FaMinus />
           </button>
           <button title="Maximize" onClick={handleMaximize}>
-            {isMaximized ? <FiMinimize2 /> : <MdOutlineCheckBoxOutlineBlank /> }
+            {isMaximized ? <PiCopy /> : <MdOutlineCheckBoxOutlineBlank /> }
           </button>
           <button title="Close" onClick={handleClose}>
             <FaTimes />
