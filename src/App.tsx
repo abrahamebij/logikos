@@ -1,14 +1,11 @@
 import "./App.css";
-import Header from "./components/layout/Header";
-
-import { Button } from "./components/ui/button";
+import Interface from "./pages/Interface";
 function App() {
 
 
   return (
     <main>
-      <Header />
-      <Button>Click Me</Button>
+      <Interface />
     </main>
   );
 }
