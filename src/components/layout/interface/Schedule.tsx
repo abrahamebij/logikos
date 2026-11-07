@@ -6,9 +6,9 @@ const Schedule = () => {
   return (
     <Card className="gap-0 pb-0">
       <CardHeader className="border-b">
-        <h2 className="font-semibold flex gap-2 items-center">
+        <h2 className="font-semibold flex gap-2 items-center justify-between">
           Schedule{" "}
-          <span className="text-muted-foreground text-xs font-light">
+          <span className="text-muted-foreground text-sm font-light">
             XX Items
           </span>
         </h2>
@@ -16,7 +16,7 @@ const Schedule = () => {
       <CardContent className="px-0">
         <div className="flex">
           {/* Schedule Items */}
-          <div className="flex flex-col w-full overflow-y-scroll  max-h-56">
+          <div className="flex flex-col w-full overflow-y-scroll max-h-56">
             <ScheduleItem type="scripture" active />
             <ScheduleItem type="scripture" />
             <ScheduleItem type="scripture" />
