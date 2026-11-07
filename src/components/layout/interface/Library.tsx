@@ -4,6 +4,7 @@ import { BsStar } from "react-icons/bs";
 import bibleList from "@/lib/bibleList";
 import { useRef, useState } from "react";
 
+// Identifies each part of the Scripture reference.
 type Field = "book" | "chapter" | "verse";
 
 // Shared by the input and its ghost overlay so the two layers line up exactly.
@@ -13,12 +14,16 @@ const FIELD_TEXT = "h-8 px-1 text-sm leading-8 font-normal tracking-normal";
 const BOOK_PATTERN = /^[1-3]?\s?[a-zA-Z\s]*$/;
 
 const Library = () => {
+  // Stores the book text and tracks which reference input is active.
   const [bookValue, setBookValue] = useState("Genesis");
   const [activeInput, setActiveInput] = useState<Field>("book");
+
+  // Keeps references to the three inputs so focus can be moved programmatically.
   const bookInput = useRef<HTMLInputElement>(null);
   const chapterInput = useRef<HTMLInputElement>(null);
   const verseInput = useRef<HTMLInputElement>(null);
 
+  // Focuses and selects the complete value of a reference field.
   function focusField(field: Field) {
     const el = { book: bookInput, chapter: chapterInput, verse: verseInput }[
       field
@@ -64,6 +69,7 @@ const Library = () => {
     : undefined;
   const ghost = match ? match.name.slice(bookValue.length) : "";
 
+  // Accepts an autocomplete suggestion or moves to another reference field.
   function handleBookKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     const input = e.currentTarget;
     const atEnd =
@@ -74,7 +80,7 @@ const Library = () => {
     if (
       match &&
       (e.key === "Tab" ||
-        e.key === "Enter" ||
+        e.key === " " ||
         (e.key === "ArrowRight" && atEnd))
     ) {
       e.preventDefault();
@@ -83,7 +89,7 @@ const Library = () => {
       return;
     }
 
-    if (e.key === "Enter") {
+    if (e.key === " ") {
       e.preventDefault();
       focusField("chapter");
       return;
@@ -92,6 +98,13 @@ const Library = () => {
     detectArrowKeys(e);
   }
 
+  // Check whether the chapter and verse exists in the boundary of the selected book
+  function checkBoundary(){
+    console.log(bookValue);
+  }
+
+
+  // Renders the Scripture reference controls and placeholder Scripture results.
   return (
     <Card className="gap-0 pb-0">
       <CardHeader className="border-b">
@@ -99,7 +112,7 @@ const Library = () => {
         <div className="flex gap-2 items-center justify-between">
           <div className="flex items-center bg-background">
             <div className="relative">
-              {/* Ghost layer: invisible copy of the typed text + the remaining letters */}
+              {/* Displays the autocomplete completion behind the editable book input. */}
               <span
                 aria-hidden
                 className={`pointer-events-none absolute inset-0 flex items-center whitespace-pre text-muted-foreground/50 ${FIELD_TEXT}`}
@@ -123,10 +136,12 @@ const Library = () => {
                 value={bookValue}
               />
             </div>
+
+            {/* Accepts only numeric chapter values. */}
             <input
               type="text"
               inputMode="numeric"
-              className={`w-4 bg-transparent outline-none text-center ${FIELD_TEXT}`}
+              className={`w-6 bg-transparent outline-none text-center ${FIELD_TEXT}`}
               ref={chapterInput}
               onKeyDown={detectArrowKeys}
               onClick={handleClick}
@@ -134,10 +149,12 @@ const Library = () => {
               onChange={filterNumber}
               defaultValue={1}
             />
+
+            {/* Accepts only numeric verse values. */}
             <input
               type="text"
               inputMode="numeric"
-              className={`w-4 bg-transparent outline-none text-center ${FIELD_TEXT}`}
+              className={`w-6 bg-transparent outline-none text-center ${FIELD_TEXT}`}
               ref={verseInput}
               onKeyDown={detectArrowKeys}
               onClick={handleClick}
@@ -147,12 +164,15 @@ const Library = () => {
             />
           </div>
 
+          {/* Marks the current Scripture reference as a favorite. */}
           <Button variant="outline" size="icon">
             <BsStar />
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="flex flex-col gap-2 py-4 overflow-y-scroll max-h-56">
+
+      {/* Displays the Scripture results for the selected reference. */}
+      <CardContent className="flex flex-col gap-2 overflow-y-scroll max-h-56 px-0">
         <ScriptureItem />
         <ScriptureItem />
         <ScriptureItem />
@@ -162,9 +182,10 @@ const Library = () => {
   );
 };
 
+// Displays one Scripture result and its reference label.
 function ScriptureItem() {
   return (
-    <div>
+    <div className="hover:bg-muted px-4 py-2 cursor-pointer">
       <p className="text-xs text-muted-foreground">
         Lorem ipsum, dolor sit amet consectetur adipisicing elit. Iste, optio.
       </p>
