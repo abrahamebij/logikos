@@ -105,6 +105,13 @@ const Library = () => {
 
   // Accepts an autocomplete suggestion or moves to another reference field.
   function handleBookKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      publishVerse(chapterValue, verseValue);
+      e.currentTarget.blur();
+      return;
+    }
+
     const input = e.currentTarget;
     const atEnd =
       input.selectionStart === bookValue.length &&
@@ -171,6 +178,32 @@ const Library = () => {
       verse,
       text,
     });
+  }
+
+  function handleVerseInputKeyDown(
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      publishVerse(chapterValue, verseValue);
+      e.currentTarget.blur();
+      return;
+    }
+
+    detectArrowKeys(e);
+  }
+
+  function handleChapterInputKeyDown(
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      publishVerse(chapterValue, verseValue);
+      e.currentTarget.blur();
+      return;
+    }
+
+    detectArrowKeys(e);
   }
 
   function handleVerseKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
@@ -286,7 +319,7 @@ const Library = () => {
               inputMode="numeric"
               className={`w-8 bg-transparent outline-none text-center ${FIELD_TEXT}`}
               ref={chapterInput}
-              onKeyDown={detectArrowKeys}
+              onKeyDown={handleChapterInputKeyDown}
               onClick={handleClick}
               onFocus={() => setActiveInput("chapter")}
               onChange={(e) => {
@@ -305,7 +338,7 @@ const Library = () => {
               inputMode="numeric"
               className={`w-8 bg-transparent outline-none text-center ${FIELD_TEXT}`}
               ref={verseInput}
-              onKeyDown={detectArrowKeys}
+              onKeyDown={handleVerseInputKeyDown}
               onClick={handleClick}
               onFocus={() => setActiveInput("verse")}
               onChange={(e) => {
