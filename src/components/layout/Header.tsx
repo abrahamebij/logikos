@@ -104,7 +104,7 @@ export default function Header() {
             <button title="Maximize" onClick={handleMaximize}>
               {isMaximized ? <PiCopy /> : <BlankIcon /> }
             </button>
-            <button title="Close" onClick={handleClose} className="hover:bg-destructive! hover:text-destructive-foreground!">
+            <button title="Close" onClick={handleClose} className="hover:bg-destructive! hover:text-card">
               <FaTimes />
             </button>
           </div>
