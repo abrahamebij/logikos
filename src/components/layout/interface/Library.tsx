@@ -134,6 +134,23 @@ const Library = () => {
     setVerseValue(verse);
   }
 
+  function handleVerseKeyDown(
+    e: React.KeyboardEvent<HTMLDivElement>,
+    chapter: number,
+  ) {
+    if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+
+    e.preventDefault();
+    const verses = scripture[chapter - 1];
+    if (!verses || chapter !== chapterValue) return;
+
+    const nextVerse =
+      verseValue + (e.key === "ArrowUp" ? -1 : 1);
+    if (nextVerse < 1 || nextVerse > verses.length) return;
+
+    selectVerse(chapter, nextVerse);
+  }
+
   useEffect(() => {
     activeVerse.current?.scrollIntoView({ block: "nearest" });
   }, [selectedBook, chapterValue, verseValue]);
@@ -245,6 +262,7 @@ const Library = () => {
                   ? activeVerse
                   : undefined
               }
+              onKeyDown={(e) => handleVerseKeyDown(e, chapterIndex + 1)}
               onSelect={() => selectVerse(chapterIndex + 1, verseIndex + 1)}
             />
           )),
@@ -262,6 +280,7 @@ function ScriptureItem({
   text,
   active,
   itemRef,
+  onKeyDown,
   onSelect,
 }: {
   book: string;
@@ -270,13 +289,16 @@ function ScriptureItem({
   text: string;
   active?: boolean;
   itemRef?: React.RefObject<HTMLDivElement | null>;
+  onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   onSelect: () => void;
 }) {
   return (
     <div
       ref={itemRef}
+      tabIndex={active ? 0 : -1}
       className={`px-4 py-2 cursor-pointer ${active ? "bg-primary text-white" : ""}`}
       onClick={onSelect}
+      onKeyDown={onKeyDown}
     >
       <p className="text-xs text-muted-foreground">{text}</p>
       <p className="font-semibold text-right text-xs pt-1">
