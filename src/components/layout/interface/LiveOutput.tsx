@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { BsGearFill } from "react-icons/bs";
+import { BsGear, BsGearFill } from "react-icons/bs";
 import {
   availableMonitors,
   primaryMonitor,
@@ -18,6 +18,7 @@ import { emitTo, listen } from "@tauri-apps/api/event";
 import { useEffect, useState } from "react";
 import { useGlobalStore } from "@/store/globalStore";
 import { useIsTauri } from "@/hooks/useIsTauri";
+import { ChevronDown } from "lucide-react";
 
 const LIVE_OUTPUT_EVENT = "logikos://live-output-changed";
 const EXTERNAL_DISPLAY_READY_EVENT = "logikos://external-display-ready";
@@ -150,10 +151,11 @@ const LiveOutput = () => {
             render={
               <Button
                 aria-label="Select output display"
-                className="w-fit"
-                variant="outline"
+                className="w-fit p-0 gap-0.5 bg-transparent! hover:bg-transparent text-sm text-muted-foreground! h-fit"
+                variant="ghost"
               >
-                <BsGearFill aria-hidden="true" />
+                <BsGear aria-hidden="true" />
+                <ChevronDown aria-hidden="true" className="text-xs" />
               </Button>
             }
           />

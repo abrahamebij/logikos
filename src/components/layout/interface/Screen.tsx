@@ -12,13 +12,19 @@ type ScreenProps = {
 
 // Vertical padding around the verse, and the largest text size as a share of screen height.
 const PADDING = 32;
-const MAX_TEXT_RATIO = 0.25;
+const MAX_TEXT_RATIO = 0.11;
 
-const Screen = ({ output, onDoubleClick, scripture: providedScripture, className }: ScreenProps) => {
+const Screen = ({
+  output,
+  onDoubleClick,
+  scripture: providedScripture,
+  className,
+}: ScreenProps) => {
   const storedScripture = useGlobalStore((state) =>
     output === "selected" ? state.selectedScripture : state.liveOutput,
   );
-  const scripture = providedScripture === undefined ? storedScripture : providedScripture;
+  const scripture =
+    providedScripture === undefined ? storedScripture : providedScripture;
   const screenRef = useRef<HTMLDivElement>(null);
   const [screenWidth, setScreenWidth] = useState(0);
   const [screenHeight, setScreenHeight] = useState(0);
@@ -56,11 +62,7 @@ const Screen = ({ output, onDoubleClick, scripture: providedScripture, className
     while (low <= high) {
       const size = Math.floor((low + high) / 2);
       const prepared = prepare(scripture.text, `600 ${size}px Geist`);
-      const result = layout(
-        prepared,
-        screenWidth,
-        size * lineHeightRatio,
-      );
+      const result = layout(prepared, screenWidth, size * lineHeightRatio);
 
       if (result.height <= availableHeight) {
         low = size + 1;
@@ -75,11 +77,11 @@ const Screen = ({ output, onDoubleClick, scripture: providedScripture, className
   return (
     <div
       ref={screenRef}
-      className={`bg-black ${className ?? "h-40"}`}
+      className={`bg-black ${className ?? "aspect-video"}`}
       onDoubleClick={onDoubleClick}
     >
       {scripture ? (
-        <div className="text-white p-4 h-full flex flex-col justify-center">
+        <div className="text-white p-4 h-full flex flex-col justify-center relative">
           <h3
             className="font-semibold text-center"
             style={{
@@ -90,14 +92,14 @@ const Screen = ({ output, onDoubleClick, scripture: providedScripture, className
             {scripture.text}
           </h3>
           <p
-            className="text-right"
-            style={{ fontSize: `${referenceSize}px`, lineHeight: 1.5 }}
+            className="text-right absolute bottom-1 right-4"
+            style={{ fontSize: `${referenceSize - 2}px`, lineHeight: 1.5 }}
           >
             {scripture.book} {scripture.chapter}:{scripture.verse}
           </p>
         </div>
       ) : (
-        <div className="text-white p-4">
+        <div className="text-white text-center text-3xl flex flex-1 items-center justify-center h-full p-4">
           <p>No scripture selected</p>
         </div>
       )}
