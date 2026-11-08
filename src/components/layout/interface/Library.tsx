@@ -265,7 +265,7 @@ const Library = () => {
             <input
               type="text"
               inputMode="numeric"
-              className={`w-6 bg-transparent outline-none text-center ${FIELD_TEXT}`}
+              className={`w-8 bg-transparent outline-none text-center ${FIELD_TEXT}`}
               ref={chapterInput}
               onKeyDown={detectArrowKeys}
               onClick={handleClick}
@@ -284,7 +284,7 @@ const Library = () => {
             <input
               type="text"
               inputMode="numeric"
-              className={`w-6 bg-transparent outline-none text-center ${FIELD_TEXT}`}
+              className={`w-8 bg-transparent outline-none text-center ${FIELD_TEXT}`}
               ref={verseInput}
               onKeyDown={detectArrowKeys}
               onClick={handleClick}

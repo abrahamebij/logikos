@@ -7,24 +7,36 @@ const Preview = () => {
   const { selectedScripture } = useGlobalStore();
   const previewRef = useRef<HTMLDivElement>(null);
   const [previewWidth, setPreviewWidth] = useState(0);
+  const [previewHeight, setPreviewHeight] = useState(0);
 
   useEffect(() => {
     const element = previewRef.current;
     if (!element) return;
 
-    const updateWidth = () => setPreviewWidth(element.clientWidth - 32);
-    updateWidth();
+    const updateSize = () => {
+      setPreviewWidth(element.clientWidth - 32);
+      setPreviewHeight(element.clientHeight);
+    };
+    updateSize();
 
-    const observer = new ResizeObserver(updateWidth);
+    const observer = new ResizeObserver(updateSize);
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
 
   const textSize = useMemo(() => {
-    if (!selectedScripture || previewWidth <= 0) return 16;
+    if (!selectedScripture || previewWidth <= 0 || previewHeight <= 0) {
+      return 16;
+    }
 
     const lineHeightRatio = 1.15;
-    const availableHeight = 96;
+    const verticalPadding = 32;
+    const referenceHeight = 16;
+    const referenceGap = 8;
+    const availableHeight = Math.max(
+      0,
+      previewHeight - verticalPadding - referenceHeight - referenceGap,
+    );
     let low = 12;
     let high = 48;
 
@@ -48,7 +60,7 @@ const Preview = () => {
     }
 
     return high;
-  }, [previewWidth, selectedScripture]);
+  }, [previewHeight, previewWidth, selectedScripture]);
 
   return (
     <Card className="gap-0 pb-0">
