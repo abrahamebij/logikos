@@ -158,7 +158,10 @@ const Library = () => {
               onKeyDown={detectArrowKeys}
               onClick={handleClick}
               onFocus={() => setActiveInput("chapter")}
-              onChange={filterNumber}
+              onChange={(e) => {
+                filterNumber(e);
+                if (verseInput.current) verseInput.current.value = "1";
+              }}
               defaultValue={1}
             />
 
