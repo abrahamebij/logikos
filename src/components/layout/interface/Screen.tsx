@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ScriptureSelection } from "@/store/globalStore";
 
 type ScreenProps = {
-  output: "selected" | "live";
+  output: "selected" | "live" | "ai";
   onDoubleClick?: () => void;
   scripture?: ScriptureSelection | null;
   className?: string;
@@ -21,7 +21,11 @@ const Screen = ({
   className,
 }: ScreenProps) => {
   const storedScripture = useGlobalStore((state) =>
-    output === "selected" ? state.selectedScripture : state.liveOutput,
+    output === "selected"
+      ? state.selectedScripture
+      : output === "ai"
+        ? state.aiOutput
+        : state.liveOutput,
   );
   const scripture =
     providedScripture === undefined ? storedScripture : providedScripture;

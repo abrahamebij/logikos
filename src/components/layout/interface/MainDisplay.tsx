@@ -1,3 +1,4 @@
+import AIPreview from "./AIPreview";
 import Library from "./Library";
 import LiveOutput from "./LiveOutput";
 import Preview from "./Preview";
@@ -12,6 +13,7 @@ const MainDisplay = () => {
       </div>
       <div className="flex flex-col justify-between gap-4 w-1/3">
         <Preview />
+        <AIPreview/>
       </div>
       <div className="w-2/3">
       <LiveOutput />
