@@ -226,8 +226,12 @@
     @apply bg-background text-foreground;
   }
 
+  #root {
+    @apply h-full;
+  }
+
   html {
-    @apply font-sans;
+    @apply h-full font-sans;
   }
 
   button {

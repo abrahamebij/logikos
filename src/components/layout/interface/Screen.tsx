@@ -1,16 +1,20 @@
 import { useGlobalStore } from "@/store/globalStore";
 import { layout, prepare } from "@chenglou/pretext";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { ScriptureSelection } from "@/store/globalStore";
 
 type ScreenProps = {
   output: "selected" | "live";
   onDoubleClick?: () => void;
+  scripture?: ScriptureSelection | null;
+  className?: string;
 };
 
-const Screen = ({ output, onDoubleClick }: ScreenProps) => {
-  const scripture = useGlobalStore((state) =>
+const Screen = ({ output, onDoubleClick, scripture: providedScripture, className }: ScreenProps) => {
+  const storedScripture = useGlobalStore((state) =>
     output === "selected" ? state.selectedScripture : state.liveOutput,
   );
+  const scripture = providedScripture === undefined ? storedScripture : providedScripture;
   const screenRef = useRef<HTMLDivElement>(null);
   const [screenWidth, setScreenWidth] = useState(0);
   const [screenHeight, setScreenHeight] = useState(0);
@@ -60,7 +64,7 @@ const Screen = ({ output, onDoubleClick }: ScreenProps) => {
   return (
     <div
       ref={screenRef}
-      className="bg-black h-40"
+      className={`bg-black ${className ?? "h-40"}`}
       onDoubleClick={onDoubleClick}
     >
       {scripture ? (
