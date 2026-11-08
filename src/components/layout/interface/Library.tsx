@@ -80,29 +80,41 @@ const Library = () => {
     if (
       match &&
       (e.key === "Tab" ||
-        e.key === " " ||
+        // e.key === " " ||
         (e.key === "ArrowRight" && atEnd))
     ) {
       e.preventDefault();
       setBookValue(match.name);
       focusField("chapter");
+      checkBoundary(
+        match.name,
+        Number(chapterInput.current?.value),
+        Number(verseInput.current?.value),
+      );
       return;
     }
 
-    if (e.key === " ") {
-      e.preventDefault();
-      focusField("chapter");
-      return;
-    }
+    // if (e.key === " ") {
+    //   e.preventDefault();
+    //   focusField("chapter");
+    //   return;
+    // }
 
     detectArrowKeys(e);
   }
 
   // Check whether the chapter and verse exists in the boundary of the selected book
-  function checkBoundary(){
-    console.log(bookValue);
-  }
+  function checkBoundary(book: string, chapter: number, verse: number) {
+    const selectedBook = bibleList.find((b) => b.name === book);
 
+    if (selectedBook && chapter > selectedBook.chapters.length) {
+      if (chapterInput.current && verseInput.current) {
+        chapterInput.current.value = "1";
+        verseInput.current.value = "1";
+        focusField("chapter");
+      }
+    }
+  }
 
   // Renders the Scripture reference controls and placeholder Scripture results.
   return (
@@ -173,23 +185,30 @@ const Library = () => {
 
       {/* Displays the Scripture results for the selected reference. */}
       <CardContent className="flex flex-col gap-2 overflow-y-scroll max-h-56 px-0">
-        <ScriptureItem />
-        <ScriptureItem />
-        <ScriptureItem />
-        <ScriptureItem />
+        <ScriptureItem book="Genesis" chapter={2} verse={1} />
       </CardContent>
     </Card>
   );
 };
 
 // Displays one Scripture result and its reference label.
-function ScriptureItem() {
+function ScriptureItem({
+  book,
+  chapter,
+  verse,
+}: {
+  book: string;
+  chapter: number;
+  verse: number;
+}) {
   return (
     <div className="hover:bg-muted px-4 py-2 cursor-pointer">
       <p className="text-xs text-muted-foreground">
         Lorem ipsum, dolor sit amet consectetur adipisicing elit. Iste, optio.
       </p>
-      <p className="font-semibold text-right text-sm">Gen 1:1</p>
+      <p className="font-semibold text-right text-sm">
+        {book.slice(0, 3)} {chapter}:{verse}
+      </p>
     </div>
   );
 }
