@@ -15,6 +15,10 @@ const FIELD_TEXT = "h-8 px-1 text-sm leading-8 font-normal tracking-normal";
 // Allows an optional leading 1-3 (e.g. "1 John"), then letters and spaces.
 const BOOK_PATTERN = /^[1-3]?\s?[a-zA-Z\s]*$/;
 
+function normalizeBook(value: string) {
+  return value.toLowerCase().replace(/\s/g, "");
+}
+
 const Library = () => {
   // Stores the editable book text and the currently selected reference.
   const [bookValue, setBookValue] = useState("Genesis");
@@ -70,7 +74,7 @@ const Library = () => {
   const match = bookValue
     ? bibleList.find(
         (book) =>
-          book.name.toLowerCase().startsWith(bookValue.toLowerCase()) &&
+          normalizeBook(book.name).startsWith(normalizeBook(bookValue)) &&
           book.name.length > bookValue.length,
       )
     : undefined;
@@ -213,11 +217,18 @@ const Library = () => {
                 onFocus={() => setActiveInput("book")}
                 onChange={(e) => {
                   const value = e.currentTarget.value;
+                  const exactBook = bibleList.find(
+                    (book) => normalizeBook(book.name) === normalizeBook(value),
+                  );
                   if (BOOK_PATTERN.test(value)) {
                     setBookValue(value);
-                    if (value in kjv) {
-                      setSelectedBook(value);
-                      checkBoundary(value, chapterValue, verseValue);
+                    if (exactBook && exactBook.name in kjv) {
+                      setSelectedBook(exactBook.name);
+                      checkBoundary(
+                        exactBook.name,
+                        chapterValue,
+                        verseValue,
+                      );
                     }
                   }
                 }}
