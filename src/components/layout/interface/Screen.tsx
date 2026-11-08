@@ -10,6 +10,10 @@ type ScreenProps = {
   className?: string;
 };
 
+// Vertical padding around the verse, and the largest text size as a share of screen height.
+const PADDING = 32;
+const MAX_TEXT_RATIO = 0.25;
+
 const Screen = ({ output, onDoubleClick, scripture: providedScripture, className }: ScreenProps) => {
   const storedScripture = useGlobalStore((state) =>
     output === "selected" ? state.selectedScripture : state.liveOutput,
@@ -34,13 +38,20 @@ const Screen = ({ output, onDoubleClick, scripture: providedScripture, className
     return () => observer.disconnect();
   }, []);
 
+  // The reference label scales with the screen so it stays readable when projected.
+  const referenceSize = Math.min(64, Math.max(12, screenHeight * 0.045));
+
+  // Finds the largest font size where the verse still fits the screen.
   const textSize = useMemo(() => {
     if (!scripture || screenWidth <= 0 || screenHeight <= 0) return 16;
 
     const lineHeightRatio = 1.15;
-    const availableHeight = Math.max(0, screenHeight - 56);
+    const availableHeight = Math.max(
+      0,
+      screenHeight - PADDING - referenceSize * 1.5,
+    );
     let low = 12;
-    let high = 48;
+    let high = Math.max(low, Math.floor(screenHeight * MAX_TEXT_RATIO));
 
     while (low <= high) {
       const size = Math.floor((low + high) / 2);
@@ -59,7 +70,7 @@ const Screen = ({ output, onDoubleClick, scripture: providedScripture, className
     }
 
     return high;
-  }, [screenHeight, screenWidth, scripture]);
+  }, [referenceSize, screenHeight, screenWidth, scripture]);
 
   return (
     <div
@@ -68,7 +79,7 @@ const Screen = ({ output, onDoubleClick, scripture: providedScripture, className
       onDoubleClick={onDoubleClick}
     >
       {scripture ? (
-        <div className="text-white p-4">
+        <div className="text-white p-4 h-full flex flex-col justify-center">
           <h3
             className="font-semibold text-center"
             style={{
@@ -78,7 +89,10 @@ const Screen = ({ output, onDoubleClick, scripture: providedScripture, className
           >
             {scripture.text}
           </h3>
-          <p className="text-xs text-right">
+          <p
+            className="text-right"
+            style={{ fontSize: `${referenceSize}px`, lineHeight: 1.5 }}
+          >
             {scripture.book} {scripture.chapter}:{scripture.verse}
           </p>
         </div>
