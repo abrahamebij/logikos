@@ -1,11 +1,13 @@
 import { VscNewFile } from "react-icons/vsc";
-import { FaMinus, FaRegFolderOpen, FaTimes } from "react-icons/fa";
+import { FaRegFolderOpen } from "react-icons/fa";
 import { AiOutlineSave } from "react-icons/ai";
 import { FaPlus } from "react-icons/fa6";
 import { BsPrinter } from "react-icons/bs";
 import { MdOutlineCheckBoxOutlineBlank as BlankIcon } from "react-icons/md";
+import { LiaTimesSolid } from "react-icons/lia";
 import { LuSend } from "react-icons/lu";
 import { PiCopy } from "react-icons/pi";
+import { FiMinus } from "react-icons/fi";
 import { Button } from "../ui/button";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect, useState } from "react";
@@ -84,9 +86,17 @@ export default function Header() {
         }`}
       >
         {/* TOP HEADER */}
-        <div className={`py-2 px-4 flex items-center gap-8 ${isApp ? "pointer-events-none" : ""}`}>
-          <div className={`flex gap-2 font-semibold text-lg ${isApp ? "pointer-events-auto" : ""}`}>Logikos</div>
-          <nav className={`flex gap-6 text-sm text-muted-foreground ${isApp ? "pointer-events-auto" : ""}`}>
+        <div
+          className={`py-2 px-4 flex items-center gap-8 ${isApp ? "pointer-events-none" : ""}`}
+        >
+          <div
+            className={`flex gap-2 font-semibold text-lg ${isApp ? "pointer-events-auto" : ""}`}
+          >
+            Logikos
+          </div>
+          <nav
+            className={`flex gap-6 text-sm text-muted-foreground ${isApp ? "pointer-events-auto" : ""}`}
+          >
             {navLinks.map((link) => (
               <button key={link.name} className="hover:underline">
                 {link.name}
@@ -99,13 +109,17 @@ export default function Header() {
         {isApp && (
           <div className="titlebar relative z-50 pointer-events-auto flex items-center justify-end gap-2 pr-2">
             <button title="Minimize" onClick={handleMinimize}>
-              <FaMinus />
+              <FiMinus />
             </button>
             <button title="Maximize" onClick={handleMaximize}>
-              {isMaximized ? <PiCopy /> : <BlankIcon /> }
+              {isMaximized ? <PiCopy /> : <BlankIcon />}
             </button>
-            <button title="Close" onClick={handleClose} className="hover:bg-destructive! hover:text-card">
-              <FaTimes />
+            <button
+              title="Close"
+              onClick={handleClose}
+              className="hover:bg-destructive! hover:text-card"
+            >
+              <LiaTimesSolid />
             </button>
           </div>
         )}
