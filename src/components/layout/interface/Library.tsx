@@ -5,6 +5,7 @@ import bibleList from "@/lib/bibleList";
 import { useEffect, useRef, useState } from "react";
 import kjv from "@/lib/versions/kjv";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { useGlobalStore } from "@/store/globalStore";
 
 // Identifies each part of the Scripture reference.
 type Field = "book" | "chapter" | "verse";
@@ -25,6 +26,9 @@ const Library = () => {
   const [selectedBook, setSelectedBook] = useState("Genesis");
   const [chapterValue, setChapterValue] = useState(1);
   const [verseValue, setVerseValue] = useState(1);
+  const setSelectedScripture = useGlobalStore(
+    (state) => state.setSelectedScripture,
+  );
 
   const [activeInput, setActiveInput] = useState<Field>("book");
 
@@ -189,6 +193,24 @@ const Library = () => {
       verseVirtualizer.scrollToIndex(activeVerseIndex, { align: "auto" });
     }
   }, [activeVerseIndex, selectedBook, verseVirtualizer]);
+
+  useEffect(() => {
+    const text = scripture[chapterValue - 1]?.[verseValue - 1];
+    if (text === undefined) return;
+
+    setSelectedScripture({
+      book: selectedBook,
+      chapter: chapterValue,
+      verse: verseValue,
+      text,
+    });
+  }, [
+    chapterValue,
+    selectedBook,
+    setSelectedScripture,
+    scripture,
+    verseValue,
+  ]);
 
   // Renders the Scripture reference controls and placeholder Scripture results.
   return (
