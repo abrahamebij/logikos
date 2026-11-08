@@ -4,6 +4,7 @@ import { BsStar } from "react-icons/bs";
 import bibleList from "@/lib/bibleList";
 import { useEffect, useRef, useState } from "react";
 import kjv from "@/lib/versions/kjv";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 // Identifies each part of the Scripture reference.
 type Field = "book" | "chapter" | "verse";
@@ -27,7 +28,7 @@ const Library = () => {
   const bookInput = useRef<HTMLInputElement>(null);
   const chapterInput = useRef<HTMLInputElement>(null);
   const verseInput = useRef<HTMLInputElement>(null);
-  const activeVerse = useRef<HTMLDivElement>(null);
+  const scriptureContainer = useRef<HTMLDivElement>(null);
 
   // Focuses and selects the complete value of a reference field.
   function focusField(field: Field) {
@@ -76,6 +77,22 @@ const Library = () => {
   const ghost = match ? match.name.slice(bookValue.length) : "";
   const scripture =
     selectedBook in kjv ? kjv[selectedBook as keyof typeof kjv] : [];
+  const verses = scripture.flatMap((chapterVerses, chapterIndex) =>
+    chapterVerses.map((text, verseIndex) => ({
+      chapter: chapterIndex + 1,
+      verse: verseIndex + 1,
+      text,
+    })),
+  );
+  const activeVerseIndex = verses.findIndex(
+    (item) => item.chapter === chapterValue && item.verse === verseValue,
+  );
+  const verseVirtualizer = useVirtualizer({
+    count: verses.length,
+    getScrollElement: () => scriptureContainer.current,
+    estimateSize: () => 80,
+    overscan: 5,
+  });
 
   // Accepts an autocomplete suggestion or moves to another reference field.
   function handleBookKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -132,28 +149,28 @@ const Library = () => {
   function selectVerse(chapter: number, verse: number) {
     setChapterValue(chapter);
     setVerseValue(verse);
+    scriptureContainer.current?.focus();
   }
 
-  function handleVerseKeyDown(
-    e: React.KeyboardEvent<HTMLDivElement>,
-    chapter: number,
-  ) {
+  function handleVerseKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
 
     e.preventDefault();
-    const verses = scripture[chapter - 1];
-    if (!verses || chapter !== chapterValue) return;
+    const currentChapterVerses = scripture[chapterValue - 1];
+    if (!currentChapterVerses) return;
 
     const nextVerse =
       verseValue + (e.key === "ArrowUp" ? -1 : 1);
-    if (nextVerse < 1 || nextVerse > verses.length) return;
+    if (nextVerse < 1 || nextVerse > currentChapterVerses.length) return;
 
-    selectVerse(chapter, nextVerse);
+    selectVerse(chapterValue, nextVerse);
   }
 
   useEffect(() => {
-    activeVerse.current?.scrollIntoView({ block: "nearest" });
-  }, [selectedBook, chapterValue, verseValue]);
+    if (activeVerseIndex >= 0) {
+      verseVirtualizer.scrollToIndex(activeVerseIndex, { align: "auto" });
+    }
+  }, [activeVerseIndex, selectedBook, verseVirtualizer]);
 
   // Renders the Scripture reference controls and placeholder Scripture results.
   return (
@@ -240,33 +257,48 @@ const Library = () => {
       </CardHeader>
 
       {/* Displays the Scripture results for the selected reference. */}
-      <CardContent className="flex flex-col gap-2 overflow-y-scroll max-h-56 px-0">
-        {scripture.map((chapters, chapterIndex) =>
-          chapters.map((verse, verseIndex) => (
+      <CardContent
+        ref={scriptureContainer}
+        className="overflow-y-auto max-h-56 px-0"
+        tabIndex={0}
+        onKeyDown={handleVerseKeyDown}
+      >
+        <div
+          className="relative w-full"
+          style={{ height: `${verseVirtualizer.getTotalSize()}px` }}
+        >
+          {verseVirtualizer.getVirtualItems().map((virtualVerse) => {
+            const item = verses[virtualVerse.index];
+            const isActive =
+              item.chapter === chapterValue && item.verse === verseValue;
+
+            return (
             <ScriptureItem
-              key={`${chapterIndex + 1}-${verseIndex + 1}`}
+              key={virtualVerse.key}
+              index={virtualVerse.index}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                transform: `translateY(${virtualVerse.start}px)`,
+              }}
               book={
                 bibleList.find((book) => book.name === selectedBook)?.shortName ||
                 selectedBook
               }
-              chapter={chapterIndex + 1}
-              verse={verseIndex + 1}
-              text={verse}
-              active={
-                chapterIndex + 1 === chapterValue &&
-                verseIndex + 1 === verseValue
-              }
-              itemRef={
-                chapterIndex + 1 === chapterValue &&
-                verseIndex + 1 === verseValue
-                  ? activeVerse
-                  : undefined
-              }
-              onKeyDown={(e) => handleVerseKeyDown(e, chapterIndex + 1)}
-              onSelect={() => selectVerse(chapterIndex + 1, verseIndex + 1)}
+              chapter={item.chapter}
+              verse={item.verse}
+              text={item.text}
+              active={isActive}
+              itemRef={(element) => {
+                if (element) verseVirtualizer.measureElement(element);
+              }}
+              onSelect={() => selectVerse(item.chapter, item.verse)}
             />
-          )),
-        )}
+            );
+          })}
+        </div>
       </CardContent>
     </Card>
   );
@@ -280,25 +312,27 @@ function ScriptureItem({
   text,
   active,
   itemRef,
-  onKeyDown,
+  index,
   onSelect,
+  style,
 }: {
   book: string;
   chapter: number;
   verse: number;
   text: string;
   active?: boolean;
-  itemRef?: React.RefObject<HTMLDivElement | null>;
-  onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
+  itemRef: (element: HTMLDivElement | null) => void;
+  index: number;
   onSelect: () => void;
+  style: React.CSSProperties;
 }) {
   return (
     <div
       ref={itemRef}
-      tabIndex={active ? 0 : -1}
-      className={`px-4 py-2 cursor-pointer ${active ? "bg-primary text-white" : ""}`}
+      data-index={index}
+      style={style}
+      className={`px-4 py-2 cursor-pointer ${active ? "bg-primary text-card!" : ""}`}
       onClick={onSelect}
-      onKeyDown={onKeyDown}
     >
       <p className="text-xs text-muted-foreground">{text}</p>
       <p className="font-semibold text-right text-xs pt-1">
