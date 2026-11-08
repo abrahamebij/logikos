@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { BsStar } from "react-icons/bs";
 import bibleList from "@/lib/bibleList";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import kjv from "@/lib/versions/kjv";
 
 // Identifies each part of the Scripture reference.
 type Field = "book" | "chapter" | "verse";
@@ -16,6 +17,9 @@ const BOOK_PATTERN = /^[1-3]?\s?[a-zA-Z\s]*$/;
 const Library = () => {
   // Stores the book text and tracks which reference input is active.
   const [bookValue, setBookValue] = useState("Genesis");
+  const [chapterValue, setChapterValue] = useState(1);
+  const [verseValue, setVerseValue] = useState(1);
+
   const [activeInput, setActiveInput] = useState<Field>("book");
 
   // Keeps references to the three inputs so focus can be moved programmatically.
@@ -68,6 +72,8 @@ const Library = () => {
       )
     : undefined;
   const ghost = match ? match.name.slice(bookValue.length) : "";
+  const scripture =
+    bookValue in kjv ? kjv[bookValue as keyof typeof kjv] : [];
 
   // Accepts an autocomplete suggestion or moves to another reference field.
   function handleBookKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -115,6 +121,14 @@ const Library = () => {
       }
     }
   }
+
+  // Always update the state of the the chapter and verse per change
+  useEffect(() => {
+    if (chapterInput.current && verseInput.current) {
+      setChapterValue(Number(chapterInput.current.value));
+      setVerseValue(Number(verseInput.current.value));
+    }
+  }, [chapterInput.current?.value, verseInput.current?.value]);
 
   // Renders the Scripture reference controls and placeholder Scripture results.
   return (
@@ -188,7 +202,17 @@ const Library = () => {
 
       {/* Displays the Scripture results for the selected reference. */}
       <CardContent className="flex flex-col gap-2 overflow-y-scroll max-h-56 px-0">
-        <ScriptureItem book="Genesis" chapter={2} verse={1} />
+        {scripture.map((chapters, chapterIndex) =>
+          chapters.map((verse, verseIndex) => (
+            <ScriptureItem
+              key={`${chapterIndex + 1}-${verseIndex + 1}`}
+              book={bibleList.find(book => book.name === bookValue)?.shortName || bookValue}
+              chapter={chapterIndex + 1}
+              verse={verseIndex + 1}
+              text={verse}
+            />
+          )),
+        )}
       </CardContent>
     </Card>
   );
@@ -199,18 +223,22 @@ function ScriptureItem({
   book,
   chapter,
   verse,
+  text,
+  active,
 }: {
   book: string;
   chapter: number;
   verse: number;
+  text: string;
+  active?: boolean;
 }) {
   return (
-    <div className="hover:bg-muted px-4 py-2 cursor-pointer">
-      <p className="text-xs text-muted-foreground">
-        Lorem ipsum, dolor sit amet consectetur adipisicing elit. Iste, optio.
-      </p>
+    <div
+      className={`hover:bg-muted px-4 py-2 cursor-pointer ${active && "bg-muted"}`}
+    >
+      <p className="text-xs text-muted-foreground">{text}</p>
       <p className="font-semibold text-right text-sm">
-        {book.slice(0, 3)} {chapter}:{verse}
+        {book.slice(0, 4)} {chapter}:{verse}
       </p>
     </div>
   );
