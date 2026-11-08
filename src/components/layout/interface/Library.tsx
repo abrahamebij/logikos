@@ -328,7 +328,7 @@ const Library = () => {
       {/* Displays the Scripture results for the selected reference. */}
       <CardContent
         ref={scriptureContainer}
-        className="overflow-y-auto max-h-56 px-0"
+        className="overflow-y-auto max-h-64 px-0"
         tabIndex={0}
         onKeyDown={handleVerseKeyDown}
       >
