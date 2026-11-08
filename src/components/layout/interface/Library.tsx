@@ -17,6 +17,7 @@ const BOOK_PATTERN = /^[1-3]?\s?[a-zA-Z\s]*$/;
 const Library = () => {
   // Stores the book text and tracks which reference input is active.
   const [bookValue, setBookValue] = useState("Genesis");
+  const [selectedBook, setSelectedBook] = useState("Genesis");
   const [chapterValue, setChapterValue] = useState(1);
   const [verseValue, setVerseValue] = useState(1);
 
@@ -73,7 +74,7 @@ const Library = () => {
     : undefined;
   const ghost = match ? match.name.slice(bookValue.length) : "";
   const scripture =
-    bookValue in kjv ? kjv[bookValue as keyof typeof kjv] : [];
+    selectedBook in kjv ? kjv[selectedBook as keyof typeof kjv] : [];
 
   // Accepts an autocomplete suggestion or moves to another reference field.
   function handleBookKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -91,6 +92,7 @@ const Library = () => {
     ) {
       e.preventDefault();
       setBookValue(match.name);
+      setSelectedBook(match.name);
       focusField("chapter");
       checkBoundary(
         match.name,
@@ -157,7 +159,10 @@ const Library = () => {
                 onFocus={() => setActiveInput("book")}
                 onChange={(e) => {
                   const value = e.currentTarget.value;
-                  if (BOOK_PATTERN.test(value)) setBookValue(value);
+                  if (BOOK_PATTERN.test(value)) {
+                    setBookValue(value);
+                    if (value in kjv) setSelectedBook(value);
+                  }
                 }}
                 value={bookValue}
               />
@@ -206,7 +211,10 @@ const Library = () => {
           chapters.map((verse, verseIndex) => (
             <ScriptureItem
               key={`${chapterIndex + 1}-${verseIndex + 1}`}
-              book={bibleList.find(book => book.name === bookValue)?.shortName || bookValue}
+              book={
+                bibleList.find((book) => book.name === selectedBook)?.shortName ||
+                selectedBook
+              }
               chapter={chapterIndex + 1}
               verse={verseIndex + 1}
               text={verse}
