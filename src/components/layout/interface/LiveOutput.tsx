@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { BsGearFill } from "react-icons/bs";
 import {
   availableMonitors,
-  getCurrentWindow,
   primaryMonitor,
   type Monitor,
 } from "@tauri-apps/api/window";
