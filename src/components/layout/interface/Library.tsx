@@ -29,6 +29,7 @@ const Library = () => {
   const setSelectedScripture = useGlobalStore(
     (state) => state.setSelectedScripture,
   );
+  const setLiveOutput = useGlobalStore((state) => state.setLiveOutput);
 
   const [activeInput, setActiveInput] = useState<Field>("book");
 
@@ -160,7 +161,25 @@ const Library = () => {
     scriptureContainer.current?.focus();
   }
 
+  function publishVerse(chapter: number, verse: number) {
+    const text = scripture[chapter - 1]?.[verse - 1];
+    if (text === undefined) return;
+
+    setLiveOutput({
+      book: selectedBook,
+      chapter,
+      verse,
+      text,
+    });
+  }
+
   function handleVerseKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      publishVerse(chapterValue, verseValue);
+      return;
+    }
+
     if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
 
     e.preventDefault();
@@ -345,6 +364,7 @@ const Library = () => {
                 if (element) verseVirtualizer.measureElement(element);
               }}
               onSelect={() => selectVerse(item.chapter, item.verse)}
+              onPublish={() => publishVerse(item.chapter, item.verse)}
             />
             );
           })}
@@ -364,6 +384,7 @@ function ScriptureItem({
   itemRef,
   index,
   onSelect,
+  onPublish,
   style,
 }: {
   book: string;
@@ -374,6 +395,7 @@ function ScriptureItem({
   itemRef: (element: HTMLDivElement | null) => void;
   index: number;
   onSelect: () => void;
+  onPublish: () => void;
   style: React.CSSProperties;
 }) {
   return (
@@ -383,6 +405,7 @@ function ScriptureItem({
       style={style}
       className={`px-4 py-2 cursor-pointer ${active ? "bg-primary text-card!" : ""}`}
       onClick={onSelect}
+      onDoubleClick={onPublish}
     >
       <p className="text-xs text-muted-foreground">{text}</p>
       <p className="font-semibold text-right text-xs pt-1">

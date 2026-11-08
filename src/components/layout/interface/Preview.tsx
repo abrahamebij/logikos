@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 const Preview = () => {
   const { selectedScripture } = useGlobalStore();
+  const setLiveOutput = useGlobalStore((state) => state.setLiveOutput);
   const previewRef = useRef<HTMLDivElement>(null);
   const [previewWidth, setPreviewWidth] = useState(0);
   const [previewHeight, setPreviewHeight] = useState(0);
@@ -68,7 +69,13 @@ const Preview = () => {
         <h2 className="font-semibold">Preview</h2>
       </CardHeader>
       <CardContent className="p-0">
-        <div ref={previewRef} className="bg-black h-40">
+        <div
+          ref={previewRef}
+          className="bg-black h-40"
+          onDoubleClick={() => {
+            if (selectedScripture) setLiveOutput(selectedScripture);
+          }}
+        >
           {selectedScripture ? (
             <div className="text-white p-4">
               <h3
