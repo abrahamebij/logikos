@@ -10,9 +10,9 @@ type ScreenProps = {
   className?: string;
 };
 
-// Vertical padding around the verse, and the largest text size as a share of screen height.
-const PADDING = 32;
-const MAX_TEXT_RATIO = 0.11;
+// Space above the verse, and the largest text size as a share of screen height.
+const TOP_PADDING = 16;
+const MAX_TEXT_RATIO = 0.105;
 
 const Screen = ({
   output,
@@ -47,6 +47,9 @@ const Screen = ({
   // The reference label scales with the screen so it stays readable when projected.
   const referenceSize = Math.min(64, Math.max(12, screenHeight * 0.045));
 
+  // Space reserved at the bottom for the reference label, plus a little breathing room.
+  const bottomPadding = referenceSize * 1.5 + screenHeight * 0.03;
+
   // Finds the largest font size where the verse still fits the screen.
   const textSize = useMemo(() => {
     if (!scripture || screenWidth <= 0 || screenHeight <= 0) return 16;
@@ -54,7 +57,7 @@ const Screen = ({
     const lineHeightRatio = 1.15;
     const availableHeight = Math.max(
       0,
-      screenHeight - PADDING - referenceSize * 1.5,
+      screenHeight - TOP_PADDING - bottomPadding,
     );
     let low = 12;
     let high = Math.max(low, Math.floor(screenHeight * MAX_TEXT_RATIO));
@@ -72,7 +75,7 @@ const Screen = ({
     }
 
     return high;
-  }, [referenceSize, screenHeight, screenWidth, scripture]);
+  }, [bottomPadding, screenHeight, screenWidth, scripture]);
 
   return (
     <div
@@ -81,7 +84,10 @@ const Screen = ({
       onDoubleClick={onDoubleClick}
     >
       {scripture ? (
-        <div className="text-white p-4 h-full flex flex-col justify-center relative">
+        <div
+          className="text-white px-4 h-full flex flex-col justify-center relative"
+          style={{ paddingTop: TOP_PADDING, paddingBottom: bottomPadding }}
+        >
           <h3
             className="font-semibold text-center"
             style={{
