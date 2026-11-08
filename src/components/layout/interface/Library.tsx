@@ -220,7 +220,10 @@ const Library = () => {
                   const exactBook = bibleList.find(
                     (book) => normalizeBook(book.name) === normalizeBook(value),
                   );
-                  if (BOOK_PATTERN.test(value)) {
+                  const isKnownBookPrefix = bibleList.some((book) =>
+                    normalizeBook(book.name).startsWith(normalizeBook(value)),
+                  );
+                  if (BOOK_PATTERN.test(value) && isKnownBookPrefix) {
                     setBookValue(value);
                     if (exactBook && exactBook.name in kjv) {
                       setSelectedBook(exactBook.name);
