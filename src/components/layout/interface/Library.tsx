@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { BsStar } from "react-icons/bs";
 import bibleList from "@/lib/bibleList";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import kjv from "@/lib/versions/kjv";
 
 // Identifies each part of the Scripture reference.
@@ -27,6 +27,7 @@ const Library = () => {
   const bookInput = useRef<HTMLInputElement>(null);
   const chapterInput = useRef<HTMLInputElement>(null);
   const verseInput = useRef<HTMLInputElement>(null);
+  const activeVerse = useRef<HTMLDivElement>(null);
 
   // Focuses and selects the complete value of a reference field.
   function focusField(field: Field) {
@@ -133,6 +134,10 @@ const Library = () => {
     setVerseValue(verse);
   }
 
+  useEffect(() => {
+    activeVerse.current?.scrollIntoView({ block: "nearest" });
+  }, [selectedBook, chapterValue, verseValue]);
+
   // Renders the Scripture reference controls and placeholder Scripture results.
   return (
     <Card className="gap-0 pb-0">
@@ -234,6 +239,12 @@ const Library = () => {
                 chapterIndex + 1 === chapterValue &&
                 verseIndex + 1 === verseValue
               }
+              itemRef={
+                chapterIndex + 1 === chapterValue &&
+                verseIndex + 1 === verseValue
+                  ? activeVerse
+                  : undefined
+              }
               onSelect={() => selectVerse(chapterIndex + 1, verseIndex + 1)}
             />
           )),
@@ -250,6 +261,7 @@ function ScriptureItem({
   verse,
   text,
   active,
+  itemRef,
   onSelect,
 }: {
   book: string;
@@ -257,15 +269,17 @@ function ScriptureItem({
   verse: number;
   text: string;
   active?: boolean;
+  itemRef?: React.RefObject<HTMLDivElement | null>;
   onSelect: () => void;
 }) {
   return (
     <div
+      ref={itemRef}
       className={`px-4 py-2 cursor-pointer ${active ? "bg-primary text-white" : ""}`}
       onClick={onSelect}
     >
       <p className="text-xs text-muted-foreground">{text}</p>
-      <p className="font-semibold text-right text-sm">
+      <p className="font-semibold text-right text-xs pt-1">
         {book.slice(0, 4)} {chapter}:{verse}
       </p>
     </div>
