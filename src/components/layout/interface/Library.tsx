@@ -2,13 +2,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { BsStar } from "react-icons/bs";
 import bibleList from "@/lib/bibleList";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import kjv from "@/lib/versions/kjv";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useGlobalStore } from "@/store/globalStore";
 
 // Identifies each part of the Scripture reference.
 type Field = "book" | "chapter" | "verse";
+const FIELDS: Field[] = ["book", "chapter", "verse"];
 
 // Shared by the input and its ghost overlay so the two layers line up exactly.
 const FIELD_TEXT = "h-8 px-1 text-sm leading-8 font-normal tracking-normal";
@@ -16,86 +17,52 @@ const FIELD_TEXT = "h-8 px-1 text-sm leading-8 font-normal tracking-normal";
 // Allows an optional leading 1-3 (e.g. "1 John"), then letters and spaces.
 const BOOK_PATTERN = /^[1-3]?\s?[a-zA-Z\s]*$/;
 
+const bibleText = kjv as Record<string, string[][]>;
+
 function normalizeBook(value: string) {
   return value.toLowerCase().replace(/\s/g, "");
 }
 
+function selectAll(e: React.MouseEvent<HTMLInputElement>) {
+  e.currentTarget.select();
+}
+
 const Library = () => {
-  // Stores the editable book text and the currently selected reference.
+  // The editable book text and the currently selected reference.
   const [bookValue, setBookValue] = useState("Genesis");
   const [selectedBook, setSelectedBook] = useState("Genesis");
-  const [chapterValue, setChapterValue] = useState(1);
-  const [verseValue, setVerseValue] = useState(1);
-  const setSelectedScripture = useGlobalStore(
-    (state) => state.setSelectedScripture,
-  );
-  const setLiveOutput = useGlobalStore((state) => state.setLiveOutput);
+  const [chapter, setChapter] = useState(1);
+  const [verse, setVerse] = useState(1);
+  const setSelectedScripture = useGlobalStore((s) => s.setSelectedScripture);
+  const setLiveOutput = useGlobalStore((s) => s.setLiveOutput);
 
-  const [activeInput, setActiveInput] = useState<Field>("book");
-
-  // Keeps references to the three inputs so focus can be moved programmatically.
-  const bookInput = useRef<HTMLInputElement>(null);
-  const chapterInput = useRef<HTMLInputElement>(null);
-  const verseInput = useRef<HTMLInputElement>(null);
+  // References to the inputs so focus can be moved programmatically.
+  const inputRefs = {
+    book: useRef<HTMLInputElement>(null),
+    chapter: useRef<HTMLInputElement>(null),
+    verse: useRef<HTMLInputElement>(null),
+  };
   const scriptureContainer = useRef<HTMLDivElement>(null);
 
-  // Focuses and selects the complete value of a reference field.
-  function focusField(field: Field) {
-    const el = { book: bookInput, chapter: chapterInput, verse: verseInput }[
-      field
-    ].current;
-    setActiveInput(field);
-    el?.focus();
-    el?.select();
-  }
-
-  // Move between the reference fields and select the newly focused value.
-  function detectArrowKeys(e: React.KeyboardEvent<HTMLInputElement>) {
-    const order: Field[] = ["book", "chapter", "verse"];
-    const i = order.indexOf(activeInput);
-
-    let nextInput: Field | null = null;
-    if (e.key === "ArrowLeft") {
-      nextInput = order[(i + order.length - 1) % order.length];
-    } else if (e.key === "ArrowRight") {
-      nextInput = order[(i + 1) % order.length];
-    }
-    if (!nextInput) return;
-
-    e.preventDefault();
-    focusField(nextInput);
-  }
-
-  function handleClick(e: React.MouseEvent<HTMLInputElement>) {
-    e.currentTarget.select();
-  }
-
-  // Keep chapter/verse numeric, including pasted input.
-  function filterNumber(e: React.ChangeEvent<HTMLInputElement>) {
-    e.currentTarget.value = e.currentTarget.value.replace(/\D/g, "");
-  }
-
-  // Autocomplete suggestion: the first book that starts with what's typed.
-  const match = bookValue
-    ? bibleList.find(
-        (book) =>
-          normalizeBook(book.name).startsWith(normalizeBook(bookValue)) &&
-          book.name.length > bookValue.length,
-      )
-    : undefined;
-  const ghost = match ? match.name.slice(bookValue.length) : "";
-  const scripture =
-    selectedBook in kjv ? kjv[selectedBook as keyof typeof kjv] : [];
-  const verses = scripture.flatMap((chapterVerses, chapterIndex) =>
-    chapterVerses.map((text, verseIndex) => ({
-      chapter: chapterIndex + 1,
-      verse: verseIndex + 1,
-      text,
-    })),
+  // Every verse of the selected book as one flat list.
+  const scripture = bibleText[selectedBook] ?? [];
+  const verses = useMemo(
+    () =>
+      scripture.flatMap((chapterVerses, c) =>
+        chapterVerses.map((text, v) => ({
+          chapter: c + 1,
+          verse: v + 1,
+          text,
+        })),
+      ),
+    [scripture],
   );
   const activeVerseIndex = verses.findIndex(
-    (item) => item.chapter === chapterValue && item.verse === verseValue,
+    (item) => item.chapter === chapter && item.verse === verse,
   );
+  const shortName =
+    bibleList.find((b) => b.name === selectedBook)?.shortName ?? selectedBook;
+
   const verseVirtualizer = useVirtualizer({
     count: verses.length,
     getScrollElement: () => scriptureContainer.current,
@@ -103,168 +70,155 @@ const Library = () => {
     overscan: 5,
   });
 
-  // Accepts an autocomplete suggestion or moves to another reference field.
-  function handleBookKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+  // Autocomplete suggestion: the first book that starts with what's typed.
+  const match = bookValue
+    ? bibleList.find(
+        (b) =>
+          normalizeBook(b.name).startsWith(normalizeBook(bookValue)) &&
+          b.name.length > bookValue.length,
+      )
+    : undefined;
+  const ghost = match ? match.name.slice(bookValue.length) : "";
+
+  // Focuses and selects the complete value of a reference field.
+  function focusField(field: Field) {
+    inputRefs[field].current?.focus();
+    inputRefs[field].current?.select();
+  }
+
+  // Sends a verse to the live output.
+  function publishVerse(c = chapter, v = verse) {
+    const text = scripture[c - 1]?.[v - 1];
+    if (text === undefined) return;
+    setLiveOutput({ book: selectedBook, chapter: c, verse: v, text });
+  }
+
+  function selectVerse(c: number, v: number) {
+    setChapter(c);
+    setVerse(v);
+    scriptureContainer.current?.focus();
+  }
+
+  // Resets to 1:1 when the chapter or verse doesn't exist in the book.
+  function resetIfOutOfRange(book: string, c: number, v: number) {
+    const data = bibleList.find((b) => b.name === book);
+    if (!data) return;
+
+    const valid =
+      c >= 1 &&
+      c <= data.chapters.length &&
+      v >= 1 &&
+      v <= data.chapters[c - 1];
+    if (!valid) {
+      setChapter(1);
+      setVerse(1);
+      focusField("chapter");
+    }
+  }
+
+  // Enter publishes the verse; left/right arrows move between the fields.
+  function handleFieldKeyDown(
+    e: React.KeyboardEvent<HTMLInputElement>,
+    field: Field,
+  ) {
     if (e.key === "Enter") {
       e.preventDefault();
-      publishVerse(chapterValue, verseValue);
+      publishVerse();
       e.currentTarget.blur();
       return;
     }
 
-    const input = e.currentTarget;
-    const atEnd =
-      input.selectionStart === bookValue.length &&
-      input.selectionEnd === bookValue.length;
+    const step = e.key === "ArrowLeft" ? -1 : e.key === "ArrowRight" ? 1 : 0;
+    if (!step) return;
 
-    // Accept the suggestion and jump to the chapter field.
-    if (
-      match &&
-      (e.key === "Tab" ||
-        // e.key === " " ||
-        (e.key === "ArrowRight" && atEnd))
-    ) {
+    e.preventDefault();
+    const i = FIELDS.indexOf(field);
+    focusField(FIELDS[(i + step + FIELDS.length) % FIELDS.length]);
+  }
+
+  // Tab or right arrow at the end accepts the suggestion and jumps to the chapter.
+  function handleBookKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    const { selectionStart, selectionEnd } = e.currentTarget;
+    const atEnd =
+      selectionStart === bookValue.length && selectionEnd === bookValue.length;
+
+    if (match && (e.key === "Tab" || (e.key === "ArrowRight" && atEnd))) {
       e.preventDefault();
       setBookValue(match.name);
       setSelectedBook(match.name);
       focusField("chapter");
-      checkBoundary(
-        match.name,
-        chapterValue,
-        verseValue,
-      );
+      resetIfOutOfRange(match.name, chapter, verse);
       return;
     }
 
-    // if (e.key === " ") {
-    //   e.preventDefault();
-    //   focusField("chapter");
-    //   return;
-    // }
-
-    detectArrowKeys(e);
+    handleFieldKeyDown(e, "book");
   }
 
-  // Check whether the chapter and verse exists in the boundary of the selected book.
-  function checkBoundary(book: string, chapter: number, verse: number) {
-    const selectedBook = bibleList.find((b) => b.name === book);
+  // Only accepts text that could still become a known book.
+  function handleBookChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const value = e.currentTarget.value;
+    const typed = normalizeBook(value);
+    const isKnownPrefix = bibleList.some((b) =>
+      normalizeBook(b.name).startsWith(typed),
+    );
+    if (!BOOK_PATTERN.test(value) || !isKnownPrefix) return;
 
-    if (
-      selectedBook &&
-      (chapter < 1 ||
-        chapter > selectedBook.chapters.length ||
-        verse < 1 ||
-        verse > selectedBook.chapters[chapter - 1])
-    ) {
-      setChapterValue(1);
-      setVerseValue(1);
-      focusField("chapter");
+    setBookValue(value);
+
+    const exact = bibleList.find((b) => normalizeBook(b.name) === typed);
+    if (exact && exact.name in bibleText) {
+      setSelectedBook(exact.name);
+      resetIfOutOfRange(exact.name, chapter, verse);
     }
   }
 
-  function selectVerse(chapter: number, verse: number) {
-    setChapterValue(chapter);
-    setVerseValue(verse);
-    scriptureContainer.current?.focus();
-  }
-
-  function publishVerse(chapter: number, verse: number) {
-    const text = scripture[chapter - 1]?.[verse - 1];
-    if (text === undefined) return;
-
-    setLiveOutput({
-      book: selectedBook,
-      chapter,
-      verse,
-      text,
-    });
-  }
-
-  function handleVerseInputKeyDown(
-    e: React.KeyboardEvent<HTMLInputElement>,
+  // Strips non-digits (including pasted text) and updates chapter or verse.
+  function handleNumberChange(
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: "chapter" | "verse",
   ) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      publishVerse(chapterValue, verseValue);
-      e.currentTarget.blur();
-      return;
-    }
+    const value = Number(e.currentTarget.value.replace(/\D/g, ""));
 
-    detectArrowKeys(e);
+    if (field === "chapter") {
+      setChapter(value);
+      setVerse(1);
+      resetIfOutOfRange(selectedBook, value, 1);
+    } else {
+      setVerse(value);
+      resetIfOutOfRange(selectedBook, chapter, value);
+    }
   }
 
-  function handleChapterInputKeyDown(
-    e: React.KeyboardEvent<HTMLInputElement>,
-  ) {
+  // In the verse list: Enter publishes, up/down moves through verses (across chapters).
+  function handleListKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (e.key === "Enter") {
       e.preventDefault();
-      publishVerse(chapterValue, verseValue);
-      e.currentTarget.blur();
+      publishVerse();
       return;
     }
-
-    detectArrowKeys(e);
-  }
-
-  function handleVerseKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      publishVerse(chapterValue, verseValue);
-      return;
-    }
-
     if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
 
     e.preventDefault();
-    const currentChapterVerses = scripture[chapterValue - 1];
-    if (!currentChapterVerses) return;
+    if (activeVerseIndex < 0) return;
 
-    const movingUp = e.key === "ArrowUp";
-    if (movingUp && verseValue === 1) {
-      if (chapterValue === 1) return;
-
-      selectVerse(
-        chapterValue - 1,
-        scripture[chapterValue - 2]?.length ?? 1,
-      );
-      return;
-    }
-
-    if (!movingUp && verseValue === currentChapterVerses.length) {
-      if (chapterValue === scripture.length) return;
-
-      selectVerse(chapterValue + 1, 1);
-      return;
-    }
-
-    selectVerse(chapterValue, verseValue + (movingUp ? -1 : 1));
+    const next = verses[activeVerseIndex + (e.key === "ArrowUp" ? -1 : 1)];
+    if (next) selectVerse(next.chapter, next.verse);
   }
 
+  // Keeps the selected verse in view.
   useEffect(() => {
     if (activeVerseIndex >= 0) {
       verseVirtualizer.scrollToIndex(activeVerseIndex, { align: "auto" });
     }
   }, [activeVerseIndex, selectedBook, verseVirtualizer]);
 
+  // Shares the current selection with the rest of the app.
   useEffect(() => {
-    const text = scripture[chapterValue - 1]?.[verseValue - 1];
+    const text = scripture[chapter - 1]?.[verse - 1];
     if (text === undefined) return;
+    setSelectedScripture({ book: selectedBook, chapter, verse, text });
+  }, [chapter, verse, selectedBook, scripture, setSelectedScripture]);
 
-    setSelectedScripture({
-      book: selectedBook,
-      chapter: chapterValue,
-      verse: verseValue,
-      text,
-    });
-  }, [
-    chapterValue,
-    selectedBook,
-    setSelectedScripture,
-    scripture,
-    verseValue,
-  ]);
-
-  // Renders the Scripture reference controls and placeholder Scripture results.
   return (
     <Card className="gap-0 pb-0">
       <CardHeader className="border-b">
@@ -272,7 +226,7 @@ const Library = () => {
         <div className="flex gap-2 items-center justify-between">
           <div className="flex items-center bg-background">
             <div className="relative">
-              {/* Displays the autocomplete completion behind the editable book input. */}
+              {/* Autocomplete completion shown behind the editable book input. */}
               <span
                 aria-hidden
                 className={`pointer-events-none absolute inset-0 flex items-center whitespace-pre text-muted-foreground/50 ${FIELD_TEXT}`}
@@ -285,69 +239,34 @@ const Library = () => {
                 spellCheck={false}
                 autoComplete="off"
                 className={`relative z-10 w-28 bg-transparent outline-none ${FIELD_TEXT}`}
-                ref={bookInput}
-                onKeyDown={handleBookKeyDown}
-                onClick={handleClick}
-                onFocus={() => setActiveInput("book")}
-                onChange={(e) => {
-                  const value = e.currentTarget.value;
-                  const exactBook = bibleList.find(
-                    (book) => normalizeBook(book.name) === normalizeBook(value),
-                  );
-                  const isKnownBookPrefix = bibleList.some((book) =>
-                    normalizeBook(book.name).startsWith(normalizeBook(value)),
-                  );
-                  if (BOOK_PATTERN.test(value) && isKnownBookPrefix) {
-                    setBookValue(value);
-                    if (exactBook && exactBook.name in kjv) {
-                      setSelectedBook(exactBook.name);
-                      checkBoundary(
-                        exactBook.name,
-                        chapterValue,
-                        verseValue,
-                      );
-                    }
-                  }
-                }}
+                ref={inputRefs.book}
                 value={bookValue}
+                onKeyDown={handleBookKeyDown}
+                onClick={selectAll}
+                onChange={handleBookChange}
               />
             </div>
 
-            {/* Accepts only numeric chapter values. */}
             <input
               type="text"
               inputMode="numeric"
               className={`w-8 bg-transparent outline-none text-center ${FIELD_TEXT}`}
-              ref={chapterInput}
-              onKeyDown={handleChapterInputKeyDown}
-              onClick={handleClick}
-              onFocus={() => setActiveInput("chapter")}
-              onChange={(e) => {
-                filterNumber(e);
-                const chapter = Number(e.currentTarget.value);
-                setChapterValue(chapter);
-                setVerseValue(1);
-                checkBoundary(selectedBook, chapter, 1);
-              }}
-              value={chapterValue || ""}
+              ref={inputRefs.chapter}
+              value={chapter || ""}
+              onKeyDown={(e) => handleFieldKeyDown(e, "chapter")}
+              onClick={selectAll}
+              onChange={(e) => handleNumberChange(e, "chapter")}
             />
 
-            {/* Accepts only numeric verse values. */}
             <input
               type="text"
               inputMode="numeric"
               className={`w-8 bg-transparent outline-none text-center ${FIELD_TEXT}`}
-              ref={verseInput}
-              onKeyDown={handleVerseInputKeyDown}
-              onClick={handleClick}
-              onFocus={() => setActiveInput("verse")}
-              onChange={(e) => {
-                filterNumber(e);
-                const verse = Number(e.currentTarget.value);
-                setVerseValue(verse);
-                checkBoundary(selectedBook, chapterValue, verse);
-              }}
-              value={verseValue || ""}
+              ref={inputRefs.verse}
+              value={verse || ""}
+              onKeyDown={(e) => handleFieldKeyDown(e, "verse")}
+              onClick={selectAll}
+              onChange={(e) => handleNumberChange(e, "verse")}
             />
           </div>
 
@@ -358,47 +277,38 @@ const Library = () => {
         </div>
       </CardHeader>
 
-      {/* Displays the Scripture results for the selected reference. */}
+      {/* Scripture results for the selected book. */}
       <CardContent
         ref={scriptureContainer}
         className="overflow-y-auto max-h-64 px-0"
         tabIndex={0}
-        onKeyDown={handleVerseKeyDown}
+        onKeyDown={handleListKeyDown}
       >
         <div
           className="relative w-full"
           style={{ height: `${verseVirtualizer.getTotalSize()}px` }}
         >
-          {verseVirtualizer.getVirtualItems().map((virtualVerse) => {
-            const item = verses[virtualVerse.index];
-            const isActive =
-              item.chapter === chapterValue && item.verse === verseValue;
+          {verseVirtualizer.getVirtualItems().map((row) => {
+            const item = verses[row.index];
 
             return (
-            <ScriptureItem
-              key={virtualVerse.key}
-              index={virtualVerse.index}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                transform: `translateY(${virtualVerse.start}px)`,
-              }}
-              book={
-                bibleList.find((book) => book.name === selectedBook)?.shortName ||
-                selectedBook
-              }
-              chapter={item.chapter}
-              verse={item.verse}
-              text={item.text}
-              active={isActive}
-              itemRef={(element) => {
-                if (element) verseVirtualizer.measureElement(element);
-              }}
-              onSelect={() => selectVerse(item.chapter, item.verse)}
-              onPublish={() => publishVerse(item.chapter, item.verse)}
-            />
+              <div
+                key={row.key}
+                ref={verseVirtualizer.measureElement}
+                data-index={row.index}
+                className="absolute top-0 left-0 w-full"
+                style={{ transform: `translateY(${row.start}px)` }}
+              >
+                <ScriptureItem
+                  book={shortName}
+                  chapter={item.chapter}
+                  verse={item.verse}
+                  text={item.text}
+                  active={row.index === activeVerseIndex}
+                  onSelect={() => selectVerse(item.chapter, item.verse)}
+                  onPublish={() => publishVerse(item.chapter, item.verse)}
+                />
+              </div>
             );
           })}
         </div>
@@ -414,35 +324,26 @@ function ScriptureItem({
   verse,
   text,
   active,
-  itemRef,
-  index,
   onSelect,
   onPublish,
-  style,
 }: {
   book: string;
   chapter: number;
   verse: number;
   text: string;
-  active?: boolean;
-  itemRef: (element: HTMLDivElement | null) => void;
-  index: number;
+  active: boolean;
   onSelect: () => void;
   onPublish: () => void;
-  style: React.CSSProperties;
 }) {
   return (
     <div
-      ref={itemRef}
-      data-index={index}
-      style={style}
       className={`px-4 py-2 cursor-pointer ${active ? "bg-primary text-card!" : ""}`}
       onClick={onSelect}
       onDoubleClick={onPublish}
     >
       <p className="text-xs text-muted-foreground">{text}</p>
       <p className="font-semibold text-right text-xs pt-1">
-        {book.slice(0, 4)} {chapter}:{verse}
+        {book} {chapter}:{verse}
       </p>
     </div>
   );
