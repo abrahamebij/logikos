@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { BsStar } from "react-icons/bs";
 import bibleList from "@/lib/bibleList";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import kjv from "@/lib/versions/kjv";
 
 // Identifies each part of the Scripture reference.
@@ -15,7 +15,7 @@ const FIELD_TEXT = "h-8 px-1 text-sm leading-8 font-normal tracking-normal";
 const BOOK_PATTERN = /^[1-3]?\s?[a-zA-Z\s]*$/;
 
 const Library = () => {
-  // Stores the book text and tracks which reference input is active.
+  // Stores the editable book text and the currently selected reference.
   const [bookValue, setBookValue] = useState("Genesis");
   const [selectedBook, setSelectedBook] = useState("Genesis");
   const [chapterValue, setChapterValue] = useState(1);
@@ -96,8 +96,8 @@ const Library = () => {
       focusField("chapter");
       checkBoundary(
         match.name,
-        Number(chapterInput.current?.value),
-        Number(verseInput.current?.value),
+        chapterValue,
+        verseValue,
       );
       return;
     }
@@ -111,26 +111,27 @@ const Library = () => {
     detectArrowKeys(e);
   }
 
-  // Check whether the chapter and verse exists in the boundary of the selected book
+  // Check whether the chapter and verse exists in the boundary of the selected book.
   function checkBoundary(book: string, chapter: number, verse: number) {
     const selectedBook = bibleList.find((b) => b.name === book);
 
-    if (selectedBook && chapter > selectedBook.chapters.length) {
-      if (chapterInput.current && verseInput.current) {
-        chapterInput.current.value = "1";
-        verseInput.current.value = "1";
-        focusField("chapter");
-      }
+    if (
+      selectedBook &&
+      (chapter < 1 ||
+        chapter > selectedBook.chapters.length ||
+        verse < 1 ||
+        verse > selectedBook.chapters[chapter - 1])
+    ) {
+      setChapterValue(1);
+      setVerseValue(1);
+      focusField("chapter");
     }
   }
 
-  // Always update the state of the the chapter and verse per change
-  useEffect(() => {
-    if (chapterInput.current && verseInput.current) {
-      setChapterValue(Number(chapterInput.current.value));
-      setVerseValue(Number(verseInput.current.value));
-    }
-  }, [chapterInput.current?.value, verseInput.current?.value]);
+  function selectVerse(chapter: number, verse: number) {
+    setChapterValue(chapter);
+    setVerseValue(verse);
+  }
 
   // Renders the Scripture reference controls and placeholder Scripture results.
   return (
@@ -161,7 +162,10 @@ const Library = () => {
                   const value = e.currentTarget.value;
                   if (BOOK_PATTERN.test(value)) {
                     setBookValue(value);
-                    if (value in kjv) setSelectedBook(value);
+                    if (value in kjv) {
+                      setSelectedBook(value);
+                      checkBoundary(value, chapterValue, verseValue);
+                    }
                   }
                 }}
                 value={bookValue}
@@ -179,9 +183,12 @@ const Library = () => {
               onFocus={() => setActiveInput("chapter")}
               onChange={(e) => {
                 filterNumber(e);
-                if (verseInput.current) verseInput.current.value = "1";
+                const chapter = Number(e.currentTarget.value);
+                setChapterValue(chapter);
+                setVerseValue(1);
+                checkBoundary(selectedBook, chapter, 1);
               }}
-              defaultValue={1}
+              value={chapterValue || ""}
             />
 
             {/* Accepts only numeric verse values. */}
@@ -193,8 +200,13 @@ const Library = () => {
               onKeyDown={detectArrowKeys}
               onClick={handleClick}
               onFocus={() => setActiveInput("verse")}
-              onChange={filterNumber}
-              defaultValue={1}
+              onChange={(e) => {
+                filterNumber(e);
+                const verse = Number(e.currentTarget.value);
+                setVerseValue(verse);
+                checkBoundary(selectedBook, chapterValue, verse);
+              }}
+              value={verseValue || ""}
             />
           </div>
 
@@ -218,6 +230,11 @@ const Library = () => {
               chapter={chapterIndex + 1}
               verse={verseIndex + 1}
               text={verse}
+              active={
+                chapterIndex + 1 === chapterValue &&
+                verseIndex + 1 === verseValue
+              }
+              onSelect={() => selectVerse(chapterIndex + 1, verseIndex + 1)}
             />
           )),
         )}
@@ -233,16 +250,19 @@ function ScriptureItem({
   verse,
   text,
   active,
+  onSelect,
 }: {
   book: string;
   chapter: number;
   verse: number;
   text: string;
   active?: boolean;
+  onSelect: () => void;
 }) {
   return (
     <div
-      className={`hover:bg-muted px-4 py-2 cursor-pointer ${active && "bg-muted"}`}
+      className={`px-4 py-2 cursor-pointer ${active ? "bg-primary text-white" : ""}`}
+      onClick={onSelect}
     >
       <p className="text-xs text-muted-foreground">{text}</p>
       <p className="font-semibold text-right text-sm">
