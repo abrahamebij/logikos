@@ -159,11 +159,25 @@ const Library = () => {
     const currentChapterVerses = scripture[chapterValue - 1];
     if (!currentChapterVerses) return;
 
-    const nextVerse =
-      verseValue + (e.key === "ArrowUp" ? -1 : 1);
-    if (nextVerse < 1 || nextVerse > currentChapterVerses.length) return;
+    const movingUp = e.key === "ArrowUp";
+    if (movingUp && verseValue === 1) {
+      if (chapterValue === 1) return;
 
-    selectVerse(chapterValue, nextVerse);
+      selectVerse(
+        chapterValue - 1,
+        scripture[chapterValue - 2]?.length ?? 1,
+      );
+      return;
+    }
+
+    if (!movingUp && verseValue === currentChapterVerses.length) {
+      if (chapterValue === scripture.length) return;
+
+      selectVerse(chapterValue + 1, 1);
+      return;
+    }
+
+    selectVerse(chapterValue, verseValue + (movingUp ? -1 : 1));
   }
 
   useEffect(() => {
