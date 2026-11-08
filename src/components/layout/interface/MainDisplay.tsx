@@ -1,4 +1,5 @@
 import Library from "./Library";
+import LiveOutput from "./LiveOutput";
 import Preview from "./Preview";
 import Schedule from "./Schedule";
 
@@ -12,6 +13,7 @@ const MainDisplay = () => {
       <div className="flex flex-col justify-between gap-4">
         <Preview />
       </div>
+      <LiveOutput />
     </div>
   );
 };
