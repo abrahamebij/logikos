@@ -341,7 +341,11 @@ function ScriptureItem({
       onClick={onSelect}
       onDoubleClick={onPublish}
     >
-      <p className="text-xs text-muted-foreground">{text}</p>
+      <p
+        className={`text-xs ${active ? "text-card" : "text-muted-foreground"}`}
+      >
+        {text}
+      </p>
       <p className="font-semibold text-right text-xs pt-1">
         {book} {chapter}:{verse}
       </p>
