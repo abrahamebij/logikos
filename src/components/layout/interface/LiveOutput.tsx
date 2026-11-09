@@ -1,13 +1,8 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Screen from "./Screen";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { BsGear, BsGearFill } from "react-icons/bs";
 import {
   availableMonitors,
   primaryMonitor,
@@ -18,7 +13,7 @@ import { emitTo, listen } from "@tauri-apps/api/event";
 import { useEffect, useState } from "react";
 import { useGlobalStore } from "@/store/globalStore";
 import { useIsTauri } from "@/hooks/useIsTauri";
-import { ChevronDown } from "lucide-react";
+import SettingsDropdown from "./SettingsDropdown";
 
 const LIVE_OUTPUT_EVENT = "logikos://live-output-changed";
 const EXTERNAL_DISPLAY_READY_EVENT = "logikos://external-display-ready";
@@ -146,20 +141,7 @@ const LiveOutput = () => {
     <Card className="gap-0 pb-0">
       <CardHeader className="flex items-center justify-between border-b">
         <h2 className="font-semibold">Output</h2>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                aria-label="Select output display"
-                className="w-fit p-0 gap-0.5 bg-transparent! hover:bg-transparent text-sm text-muted-foreground! h-fit"
-                variant="ghost"
-              >
-                <BsGear aria-hidden="true" />
-                <ChevronDown aria-hidden="true" className="text-xs" />
-              </Button>
-            }
-          />
-          <DropdownMenuContent>
+        <SettingsDropdown ariaLabel="Select output display">
             {monitors.length > 0 ? (
               monitors.map((monitor, index) => {
                 const key = monitorKey(monitor);
@@ -189,8 +171,7 @@ const LiveOutput = () => {
                 )}
               </>
             )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        </SettingsDropdown>
       </CardHeader>
       <CardContent className="p-0">
         <Screen output="live" />
