@@ -337,7 +337,7 @@ function ScriptureItem({
 }) {
   return (
     <div
-      className={`px-4 py-2 cursor-pointer ${active ? "bg-primary text-card!" : ""}`}
+      className={`px-4 py-2 cursor-pointer select-none ${active ? "bg-primary text-card!" : ""}`}
       onClick={onSelect}
       onDoubleClick={onPublish}
     >

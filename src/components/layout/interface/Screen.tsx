@@ -84,7 +84,7 @@ const Screen = ({
   return (
     <div
       ref={screenRef}
-      className={`bg-black ${className ?? "aspect-video"}`}
+      className={`bg-black select-none ${className ?? "aspect-video"}`}
       onDoubleClick={onDoubleClick}
     >
       {scripture ? (
