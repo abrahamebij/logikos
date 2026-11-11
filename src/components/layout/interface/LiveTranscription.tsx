@@ -1,11 +1,16 @@
 import { BarVisualizer } from "@/components/ui/bar-visualizer";
+import { useTranscriber } from "@/hooks/useTranscriber";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useRecording } from "@/hooks/use-recording";
+import { useGlobalStore } from "@/store/globalStore";
 import SettingsDropdown from "./SettingsDropdown";
 
 const LiveTranscription = () => {
   const recording = useRecording();
+  useTranscriber(recording.audioStream);
+  const transcript = useGlobalStore((state) => state.transcript);
+  console.log('transcript: ', transcript);
 
   return (
     <Card className="gap-0 pb-0">
@@ -51,11 +56,9 @@ const LiveTranscription = () => {
       </CardHeader>
       <CardContent className="py-6">
         <p className="text-muted-foreground text-sm">
-          {/* {recording.status === "recording"
-            ? "Listening..."
-            : "Select a microphone to begin"} */}
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Quidem
-          aliquam molestias error cupiditate.
+          {transcript.length > 0
+            ? transcript.join(" ")
+            : "Select a microphone to begin"}
         </p>
       </CardContent>
     </Card>
