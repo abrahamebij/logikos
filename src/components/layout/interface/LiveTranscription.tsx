@@ -8,7 +8,7 @@ import SettingsDropdown from "./SettingsDropdown";
 
 const LiveTranscription = () => {
   const recording = useRecording();
-  useTranscriber(recording.audioStream);
+  const { modelReady } = useTranscriber(recording.audioStream);
   const transcript = useGlobalStore((state) => state.transcript);
   console.log('transcript: ', transcript);
 
@@ -16,7 +16,25 @@ const LiveTranscription = () => {
     <Card className="gap-0 pb-0">
       <CardHeader className="border-b">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold">Live Transcription</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="font-semibold">Live Transcription</h2>
+            <span
+              className={`inline-flex items-center gap-1 text-xs ${
+                modelReady ? "text-emerald-600" : "text-muted-foreground"
+              }`}
+              aria-label={
+                modelReady ? "Transcription model ready" : "Loading transcription model"
+              }
+            >
+              <span
+                className={`size-2 rounded-full ${
+                  modelReady ? "bg-emerald-500" : "bg-muted-foreground animate-pulse"
+                }`}
+                aria-hidden="true"
+              />
+              {modelReady ? "Ready" : "Loading"}
+            </span>
+          </div>
           <SettingsDropdown ariaLabel="Select microphone">
             {!recording.hasMicrophoneAccess ? (
               <DropdownMenuItem

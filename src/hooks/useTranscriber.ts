@@ -5,7 +5,8 @@ import { useGlobalStore } from "@/store/globalStore";
 // Describe the worker messages handled by this hook.
 type TranscriberMessage =
   | { type: "ready" }
-  | { type: "transcript"; text: string };
+  | { type: "transcript"; text: string }
+  | { type: "error"; message: string };
 
 // Expose the worker's model loading state to the component using the hook.
 export interface UseTranscriberResult {
@@ -46,12 +47,21 @@ export const useTranscriber = (
           return;
         }
 
+        if (event.data.type === "error") {
+          console.error("Transcription worker error:", event.data.message);
+          return;
+        }
+
         // Ignore empty recognition results and append useful text globally.
         if (event.data.type === "transcript" && event.data.text.trim()) {
           appendTranscript(event.data.text);
         }
       },
     );
+    // Surface worker startup failures that occur before it can post a message.
+    worker.addEventListener("error", (event) => {
+      console.error("Transcription worker failed to start:", event.message);
+    });
     // Ask the worker to load its speech-recognition model.
     worker.postMessage({ type: "load" });
 
@@ -111,6 +121,8 @@ export const useTranscriber = (
         source.connect(node);
         // Keep the processing graph active.
         node.connect(context.destination);
+        // Resume the dedicated context so the worklet starts processing audio.
+        await context.resume();
       } catch (error) {
         // Report setup failures while allowing the component to remain mounted.
         if (!disposed) {
